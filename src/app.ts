@@ -4,77 +4,20 @@ import * as crypto from 'crypto';
 import express from "express";
 import { Request, Response } from "express";
 import { TokenSet } from 'openid-client';
-import * as fs from "fs";
+// import * as fs from "fs";
+import TenantCache from './helper/cache';
+import Helper from './helper/helper';
 
 import {
-  // Account,
-  // Accounts,
-  // AccountType,
-  // Allocation,
-  // Allocations,
-  // BankTransaction,
-  // BankTransactions,
-  // BankTransfer,
-  // BankTransfers,
-  // BatchPayment,
-  // BatchPayments,
-  // Contact,
-  // ContactGroup,
-  // ContactGroups,
-  // ContactPerson,
-  // Contacts,
-  // Currency,
-  // CurrencyCode,
-  // Employees,
-  // HistoryRecords,
-  Invoice,
-  // Invoices,
-  // Item,
-  // Items,
-  // LineAmountTypes,
-  // LineItem,
-  // LinkedTransaction,
-  // LinkedTransactions,
-  // ManualJournal,
-  // ManualJournals,
-  // Payment,
-  // Payments,
-  // PaymentServices,
-  // Prepayment,
-  // PurchaseOrder,
-  // PurchaseOrders,
-  // Quote,
-  // Quotes,
-  // Receipt,
-  // Receipts,
-  // TaxRate,
-  // TaxRates,
-  // TaxType,
-  // TrackingCategories,
-  // TrackingCategory,
-  // TrackingOption,
   XeroAccessToken,
   XeroClient,
   XeroIdToken,
-  // CreditNotes,
-  // CreditNote,
-  // Employee,
 } from "xero-node";
-// import Helper from "./helper";
 import jwtDecode from 'jwt-decode';
-// import { Asset } from "xero-node/dist/gen/model/assets/asset";
-// import { AssetStatus, AssetStatusQueryParam } from "xero-node/dist/gen/model/assets/models";
-// import { Project, ProjectCreateOrUpdate, ProjectPatch, ProjectStatus, TimeEntry, TimeEntryCreateOrUpdate } from 'xero-node/dist/gen/model/projects/models';
-// import { Employee as AUPayrollEmployee, HomeAddress, State, EmployeeStatus, EarningsType, EarningsLine } from 'xero-node/dist/gen/model/payroll-au/models';
-// import { FeedConnections, FeedConnection, CountryCode, Statements, Statement, CreditDebitIndicator, CurrencyCode as BankfeedsCurrencyCode } from 'xero-node/dist/gen/model/bankfeeds/models';
-// import { Employee as UKPayrollEmployee, Employment } from 'xero-node/dist/gen/model/payroll-uk/models';
-// import { Employment as NZPayrollEmployment, EmployeeLeaveSetup as NZEmployeeLeaveSetup, Employee as NZEmployee } from 'xero-node/dist/gen/model/payroll-nz/models';
-// import { ObjectGroup } from "xero-node/dist/gen/model/files/models";
 
 const session = require("express-session");
 var FileStore = require('session-file-store')(session);
 const path = require("path");
-// const mime = require("mime-types");
 
 const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
@@ -84,34 +27,14 @@ const scopes = [
   "openid",
   "profile",
   "email",
-  // "accounting.transactions",
   "accounting.transactions.read",
   "accounting.reports.read",
-  // "accounting.journals.read",
-  // "accounting.settings",
-  // "accounting.settings.read",
-  // "accounting.contacts",
   "accounting.contacts.read",
-  // "accounting.attachments",
-  // "accounting.attachments.read",
-  // "files",
-  // "files.read",
-  // "assets",
-  // "assets.read",
-  // "projects",
-  // "projects.read",
-  // "payroll.employees",
   "payroll.employees.read",
-  // "payroll.payruns",
-  // "payroll.payslip",
-  // "payroll.payslip.read",
-  // "payroll.timesheets",
-  // "payroll.setting"
 ].join(' ');
 
 
-let tenantCache = {}
-loadTenantCached();
+let tenantCache = new TenantCache('./cache.json').load();
 
 const xero = new XeroClient({
   clientId: client_id,
@@ -128,6 +51,8 @@ const xero = new XeroClient({
 if (!client_id || !client_secret || !redirectUrl) {
   throw Error('Environment Variables not all set - please check your .env file in the project root or create one!')
 }
+
+const xeroHelper = new Helper(xero);
 
 class App {
   public app: express.Application;
@@ -171,28 +96,6 @@ class App {
       return ''
     }
   }
-
-  
-  sleep(ms) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  };
-
-  verifyWebhookEventSignature(req: Request) {
-    let computedSignature = crypto.createHmac('sha256', process.env.WEBHOOK_KEY).update(req.body.toString()).digest('base64');
-    let xeroSignature = req.headers['x-xero-signature'];
-
-    if (xeroSignature === computedSignature) {
-      console.log('Signature passed! This is from Xero!');
-      return true;
-    } else {
-      // If this happens someone who is not Xero is sending you a webhook
-      console.log('Signature failed. Webhook might not be from Xero or you have misconfigured something...');
-      console.log(`Got {${computedSignature}} when we were expecting {${xeroSignature}}`);
-      return false;
-    }
-  };
 
   private routes(): void {
     const router = express.Router();
@@ -391,13 +294,13 @@ class App {
     router.get("/employees", async (req: Request, res: Response) => {
       try {
         const tenantId = req.session.activeTenant.tenantId;
-        if(!tenantCacheExists(tenantId, 'averageSalary')) {
-          const invoiceTables = await loadAverageSalary(tenantId);
-          updateTenantCache(tenantId, 'averageSalary', invoiceTables);
-          saveTenantCache();
+        if(!tenantCache.exists(tenantId, 'averageSalary')) {
+          const invoiceTables = await xeroHelper.loadAverageSalary(tenantId);
+          tenantCache.update(tenantId, 'averageSalary', invoiceTables);
+          tenantCache.save();
         }
 
-        const {employeesCount, averageSalary} = getTenantCache(tenantId, 'averageSalary');
+        const {employeesCount, averageSalary} = tenantCache.get(tenantId, 'averageSalary');
 
         res.render("employees", {
           consentUrl: await xero.buildConsentUrl(),
@@ -421,13 +324,13 @@ class App {
       try {
         const tenantId = req.session.activeTenant.tenantId;
 
-        if(!tenantCacheExists(tenantId, 'invoiceTables')) {
-          const invoiceTables = await loadInvoiceTables(tenantId);
-          updateTenantCache(tenantId, 'invoiceTables', invoiceTables);
-          saveTenantCache();
+        if(!tenantCache.exists(tenantId, 'invoiceTables')) {
+          const invoiceTables = await xeroHelper.loadInvoiceTables(tenantId);
+          tenantCache.update(tenantId, 'invoiceTables', invoiceTables);
+          tenantCache.save();
         }
 
-        const {customerTable, supplierTable} = getTenantCache(tenantId, 'invoiceTables');
+        const {customerTable, supplierTable} = tenantCache.get(tenantId, 'invoiceTables');
 
         res.render("invoices", {
           consentUrl: await xero.buildConsentUrl(),
@@ -459,123 +362,4 @@ class App {
   }
 }
 
-// Move to own file?
-function calculateAnnualSalary(employee: any):number {
-  let salary = 0;
-  const earningLines = employee.payTemplate.earningsLines || [];
-  salary = earningLines.reduce((sum, line) => calculateAnnualEarnings(line), 0);
-  return salary;
-}
-
-function calculateAnnualEarnings(earningsLine: any): number {
-  let amount = 0;
-  switch(earningsLine.calculationType) {
-    case "ENTEREARNINGSRATE": amount = (earningsLine.ratePerUnit || 0) * (earningsLine.normalNumberOfUnits || 0); break;
-    case "ANNUALSALARY": amount = (earningsLine.annualSalary || 0); break;
-    default:break;
-  }
-  return amount;
-}
-
-
-
-
-function getTenantCache(tenantId, type) {
-  return (tenantCache[tenantId] || {})[type] || {};
-}
-function loadTenantCached() {
-  try {
-    const cache = JSON.parse(fs.readFileSync('./cache.json',
-    {encoding:'utf8', flag:'r'}));
-    tenantCache = cache;
-  } catch(e) {
-
-  } finally {
-    return tenantCache;
-  }
-}
-
-function updateTenantCache(tenantId, type, data) {
-  tenantCache[tenantId] = tenantCache[tenantId] || {};
-  tenantCache[tenantId][type] = data;
-}
-
-function tenantCacheExists(tenantId, type) {
-  return tenantCache[tenantId] && tenantCache[tenantId][type] !== undefined;
-}
-
-function saveTenantCache() {
-  try {
-    fs.writeFileSync('./cache.json', JSON.stringify(tenantCache), {encoding:'utf8'});
-  } catch(e) {
-
-  } finally {
-
-  }
-  
-}
-
-async function loadInvoiceTables(tenantId) {
-  const getContactsResponse = await xero.accountingApi.getContacts(tenantId);
-        
-  const getInvoicesResponse = await xero.accountingApi.getInvoices(tenantId);
-  const now = new Date();
-  let oneYearAgo = new Date( now.getFullYear() - 1, now.getMonth(), now.getDate());
-
-  const invoices = getInvoicesResponse.body.invoices.filter(invoice => new Date(invoice.date).getTime() >= oneYearAgo.getTime() )
-
-  const customers = getContactsResponse.body.contacts.filter(contact => contact.isCustomer === true)
-
-  const suppliers = getContactsResponse.body.contacts.filter(contact => contact.isSupplier === true)
-
-  const accountsRec = invoices.filter(invoice => invoice.type === Invoice.TypeEnum.ACCREC);
-  const accountsPay = invoices.filter(invoice => invoice.type === Invoice.TypeEnum.ACCPAY);
-
-  const grouper = ({items, getKey, getValue, accumulator, startValue}) => items.reduce((table, item) => {
-    const key = getKey(item);
-    table[key] = table[key] || startValue;
-    table[key] = accumulator(table[key], getValue(item));
-    return table;
-  }, {});
-
-  const accrecSumByCustomer = grouper({
-    items: accountsRec,
-    getKey: invoice => invoice.contact.contactID,
-    getValue: invoice => invoice.total,
-    accumulator: (a, b) => a + b,
-    startValue: 0
-  });
-
-  const accPaySumBySupplier = grouper({
-    items: accountsPay,
-    getKey: invoice => invoice.contact.contactID,
-    getValue: invoice => invoice.total,
-    accumulator: (a, b) => a + b,
-    startValue: 0
-  });
-
-  const customerTable = customers.map(customer => ({ name: customer.name, total: accrecSumByCustomer[customer.contactID] || 0 }));
-  const supplierTable = suppliers.map(supplier => ({ name: supplier.name, total: accPaySumBySupplier[supplier.contactID] || 0 }));
-  return {customerTable, supplierTable};
-}
-
-async function loadAverageSalary(tenantId) {
-  const getEmployeesResponse = await xero.payrollAUApi.getEmployees(tenantId);
-  const employeesCount:number = getEmployeesResponse.body.employees.length
-  const employeeIDs:string[] = getEmployeesResponse.body.employees.map(employee => employee.employeeID)
-  const employees = [];
-  
-  // Limit rate to xero for employee requests
-  for(let i = 0; i < employeeIDs.length; i++) {
-    const employeeID = employeeIDs[i];
-    const employeeResponse = await xero.payrollAUApi.getEmployee(tenantId, employeeID);
-    const employee = employeeResponse.body.employees[0];
-    employees.push(employee);
-  }
-
-  const totalSalary = employees.map(calculateAnnualSalary).reduce((sum, salery) => sum + salery, 0);
-  const averageSalary = totalSalary / employeesCount;
-
-  return { averageSalary, employeesCount };
-}
 export default new App().app;
