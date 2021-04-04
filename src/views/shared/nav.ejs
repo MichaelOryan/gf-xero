@@ -1,0 +1,19 @@
+<nav class='left-banner menu-items'>
+  <ul>
+    <% if (authenticated && authenticated.decodedIdToken && authenticated.decodedAccessToken && authenticated.activeTenant) { %>
+    <li><a href="/employees">Employee</a></li>
+    <li><a href="/invoices">Invoices</a></li>
+    <% } %>
+  </ul>
+</nav>
+
+
+<!-- <script>
+  $(document).ready(function(){
+    $(".api-section").click(function(e) {   
+      e.target.classList.toggle("checked");
+      $('#' + e.target.getAttribute('data-api')).toggleClass("open-nav");
+      e.stopPropagation();
+    });
+  });
+</script> -->

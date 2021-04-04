@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+  <%- include('shared/head') -%>
+  <body>
+    <%- include('shared/nav') -%>
+    <div class='core-content'>
+      <%- include('shared/header') -%>
+      <div class='body-wrapper'>
+        <div class='body-content'>
+          <h2>Employees</h2>
+          <table>
+            <tr>
+              <th>Employee Count </th>
+              <td><%= count %></td>
+            </tr>
+            <tr>
+              <th>Average Salary </th>
+              <td><%= currencyFormatter(avergeSalary) %></td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

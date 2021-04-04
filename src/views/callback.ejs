@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+  <%- include('shared/head') -%>
+  <body>
+    <%- include('shared/nav') -%>
+    <div class='core-content'>
+      <%- include('shared/header') -%>
+      <div class='body-wrapper'>
+        <div class='body-content'>
+          <% if (authenticated && authenticated.decodedIdToken && authenticated.decodedAccessToken) { %>
+            <h4 id='authenticated'>You are logged in with: <span><%= authenticated.activeTenant.tenantName %></span></h4>
+            <hr>
+          <%} else { %>
+            <h4>Please login and authorise an organisation to use this service.</h4>
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

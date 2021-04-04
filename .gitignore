@@ -1,0 +1,8 @@
+node_modules/
+dist
+npm-debug.log
+.env
+.DS_Store
+**img-temp*
+sessions/*
+cache.json

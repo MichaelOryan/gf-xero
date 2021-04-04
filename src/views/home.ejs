@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+<%- include('shared/head') -%>
+
+  <body>
+    <% if (authenticated.decodedIdToken && authenticated.decodedAccessToken && authenticated.activeTenant) { %>
+      <%- include('shared/nav') -%>
+        <div class='core-content'>
+          <%- include('shared/header') -%>
+            <div class='body-wrapper'>
+              <div class='body-content'>
+                <h2>Welcome</h2>
+              </div>
+            </div>
+        </div>
+    <%} else { %>
+      <a href="<%= consentUrl %>">
+        <h2>Please login with Xero to continue</h2>
+      </a>
+    <% } %>
+  </body>
+
+</html>
