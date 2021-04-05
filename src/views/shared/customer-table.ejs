@@ -1,0 +1,19 @@
+<div>
+    <h2>Customers</h2>
+    <table class='table-striped'>
+        <tr>
+            <th>Name</th>
+            <th>Amount</th>
+        </tr>
+        <% for(var i=0; i < customers.length; i++) { %>
+            <tr>
+                <td>
+                    <%= customers[i].name %>
+                </td>
+                <td>
+                    <%= currencyFormatter(customers[i].total) %>
+                </td>
+            </tr>
+            <% } %>
+    </table>
+</div>

@@ -2,16 +2,23 @@
 <html>
   <%- include('shared/head') -%>
   <body>
-    <%- include('shared/nav') -%>
-    <div class='core-content'>
+    <div class='container'>
       <%- include('shared/header') -%>
       <div class='body-wrapper'>
-        <div class='body-content'>
+        <div class='container'>
           <% if (authenticated && authenticated.decodedIdToken && authenticated.decodedAccessToken) { %>
             <h4 id='authenticated'>You are logged in with: <span><%= authenticated.activeTenant.tenantName %></span></h4>
+            <%- include('shared/dashboard') -%>
             <hr>
           <%} else { %>
             <h4>Please login and authorise an organisation to use this service.</h4>
+            <p>
+              <div class="btn-group">
+                <a href="<%= consentUrl %>" class="btn btn-primary active btn-lg">
+                  Login
+                </a>
+              </div>
+              </p>
           <% } %>
         </div>
       </div>
