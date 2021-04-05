@@ -4,20 +4,33 @@
 
   <body>
     <% if (authenticated.decodedIdToken && authenticated.decodedAccessToken && authenticated.activeTenant) { %>
-      <%- include('shared/nav') -%>
-        <div class='core-content'>
+        <div class='container core-content'>
           <%- include('shared/header') -%>
             <div class='body-wrapper'>
               <div class='body-content'>
-                <h2>Welcome</h2>
+                <h4 id='authenticated'>You are logged in with: <span><%= authenticated.activeTenant.tenantName %></span></h4>
+                <%- include('shared/dashboard') -%>
               </div>
             </div>
         </div>
-    <%} else { %>
-      <a href="<%= consentUrl %>">
-        <h2>Please login with Xero to continue</h2>
-      </a>
-    <% } %>
+        <%} else { %>
+          <div class='container '>
+            <p>
+            <a href="<%= consentUrl %>">
+              <h3>Please login with Xero to continue</h2>
+            </a>
+          </p>
+          <p>
+          <div class="btn-group">
+            <a href="<%= consentUrl %>" class="btn btn-primary active btn-lg">
+              <!-- <i class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></i> Login -->
+              Login
+            </a>
+            <!-- <a href="/cancel/1" class="btn btn-default">Cancel</a> -->
+          </div>
+          </p>
+            <% } %>
+          </div>
   </body>
 
 </html>

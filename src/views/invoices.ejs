@@ -8,7 +8,9 @@
       <div class='body-wrapper'>
         <div class='body-content'>
           <h1>Invoice Totals for the last 12 Months</h1>
-          <h2>Customers</h2>
+          <%- include('shared/customer-table') -%>
+          <%- include('shared/supplier-table') -%>
+          <!-- <h2>Customers</h2>
           <table>
             <tr>
               <th>Name</th>
@@ -20,8 +22,8 @@
                  <td><%= currencyFormatter(customers[i].total) %></td>
                </tr>
             <% } %>
-          </table>
-          <h2>Suppliers</h2>
+          </table> -->
+          <!-- <h2>Suppliers</h2>
           <table>
             <tr>
               <th>Name</th>
@@ -33,7 +35,7 @@
                  <td><%= currencyFormatter(suppliers[i].total) %></td>
                </tr>
             <% } %>
-          </table>
+          </table> -->
         </div>
       </div>
     </div>

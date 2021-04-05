@@ -6,7 +6,8 @@
     <div class='core-content'>
       <%- include('shared/header') -%>
       <div class='body-wrapper'>
-        <div class='body-content'>
+        <%- include('shared/employees-table') -%>
+        <!-- <div class='body-content'>
           <h2>Employees</h2>
           <table>
             <tr>
@@ -18,7 +19,7 @@
               <td><%= currencyFormatter(avergeSalary) %></td>
             </tr>
           </table>
-        </div>
+        </div> -->
       </div>
     </div>
   </body>

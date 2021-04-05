@@ -112,11 +112,14 @@ class App {
       }
 
       try {
-        const authData = this.authenticationData(req, res)
+        const authData = this.authenticationData(req, res);
+        
+        const tenantId = req.session.activeTenant.tenantId;
 
         res.render("home", {
           consentUrl: await xero.buildConsentUrl(),
-          authenticated: authData
+          authenticated: authData,
+          ... await loadSharedViewTables(authData, tenantId)
         });
       } catch (e) {
         res.status(res.statusCode);
@@ -135,7 +138,7 @@ class App {
 
         await xero.updateTenants(false)
 
-        console.log('xero.config.state: ', xero.config.state)
+        // console.log('xero.config.state: ', xero.config.state)
 
         // this is where you can associate & save your
         // `tokenSet` to a user in your Database
@@ -149,11 +152,20 @@ class App {
         req.session.tokenSet = tokenSet
         req.session.allTenants = xero.tenants
         req.session.activeTenant = xero.tenants[0]
+
+        const authData = this.authenticationData(req, res);
         
+        const tenantId = req.session.activeTenant.tenantId;
+
+
 
         res.render("callback", {
           consentUrl: await xero.buildConsentUrl(),
-          authenticated: this.authenticationData(req, res)
+          authenticated: authData,
+          ... await loadSharedViewTables(authData, tenantId)
+
+          
+          
         });
       } catch (e) {
         res.status(res.statusCode);
@@ -170,11 +182,13 @@ class App {
         const activeOrgId = req.body.active_org_id
         const picked = xero.tenants.filter((tenant) => tenant.tenantId == activeOrgId)[0]
         req.session.activeTenant = picked
-        // const authData = this.authenticationData(req, res)
+        const tenantId = req.session.activeTenant.tenantId;
+        const authData = this.authenticationData(req, res)
 
         res.render("home", {
           consentUrl: await xero.buildConsentUrl(),
-          authenticated: this.authenticationData(req, res)
+          authenticated: this.authenticationData(req, res),
+          ... await loadSharedViewTables(authData, tenantId)
         });
       } catch (e) {
         res.status(res.statusCode);
@@ -216,11 +230,13 @@ class App {
         req.session.allTenants = xero.tenants
         req.session.activeTenant = xero.tenants[0]
 
-        const authData = this.authenticationData(req, res)
+        const authData = this.authenticationData(req, res);
+        const tenantId = req.session.activeTenant.tenantId;
 
         res.render("home", {
           consentUrl: await xero.buildConsentUrl(),
-          authenticated: this.authenticationData(req, res)
+          authenticated: this.authenticationData(req, res),
+          ... await loadSharedViewTables(authData, tenantId)
         });
       } catch (e) {
         res.status(res.statusCode);
@@ -360,6 +376,54 @@ class App {
 
     this.app.use("/", router);
   }
+}
+
+async function loadSharedViewTables(authData, tenantId: string) {
+  let tables = {
+    supplierTable: [],
+    customerTable: [],
+    employeesCount: 0,
+    averageSalary: 0,
+   };
+
+  if(isAuthenticated(authData)) {
+    if(isAuthenticated(authData))
+      tables = await loadTables(tenantId)
+  }
+
+  return {
+    suppliers: tables.supplierTable,
+    customers: tables.customerTable,
+    count: tables.employeesCount,
+    averageSalary: tables.averageSalary,
+    currencyFormatter: number => new Intl.NumberFormat('en-AU', { maximumSignificantDigits: 2 , minimumSignificantDigits: 2, currencyDisplay: 'narrowSymbol', currency: 'AUD', style: 'currency'}).format(number),
+  }
+
+}
+
+async function loadTables(tenantId: string) {
+
+  if(!tenantCache.exists(tenantId, 'invoiceTables')) {
+    const invoiceTables = await xeroHelper.loadInvoiceTables(tenantId);
+    tenantCache.update(tenantId, 'invoiceTables', invoiceTables);
+    tenantCache.save();
+  }
+
+  const {customerTable, supplierTable} = tenantCache.get(tenantId, 'invoiceTables');
+
+  if(!tenantCache.exists(tenantId, 'averageSalary')) {
+    const invoiceTables = await xeroHelper.loadAverageSalary(tenantId);
+    tenantCache.update(tenantId, 'averageSalary', invoiceTables);
+    tenantCache.save();
+  }
+
+  const {employeesCount, averageSalary} = tenantCache.get(tenantId, 'averageSalary');
+
+  return {customerTable, supplierTable, employeesCount, averageSalary};
+}
+
+function isAuthenticated(authenticated) {
+  return (authenticated.decodedIdToken && authenticated.decodedAccessToken && authenticated.activeTenant)
 }
 
 export default new App().app;
