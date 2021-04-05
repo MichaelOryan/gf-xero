@@ -307,65 +307,6 @@ class App {
       }
     })
 
-    router.get("/employees", async (req: Request, res: Response) => {
-      try {
-        const tenantId = req.session.activeTenant.tenantId;
-        if(!tenantCache.exists(tenantId, 'averageSalary')) {
-          const invoiceTables = await xeroHelper.loadAverageSalary(tenantId);
-          tenantCache.update(tenantId, 'averageSalary', invoiceTables);
-          tenantCache.save();
-        }
-
-        const {employeesCount, averageSalary} = tenantCache.get(tenantId, 'averageSalary');
-
-        res.render("employees", {
-          consentUrl: await xero.buildConsentUrl(),
-          authenticated: this.authenticationData(req, res),
-          count: employeesCount,
-          avergeSalary: averageSalary,
-          currencyFormatter: number => new Intl.NumberFormat('en-AU', { maximumSignificantDigits: 2 , minimumSignificantDigits: 2, currencyDisplay: 'narrowSymbol', currency: 'AUD', style: 'currency'}).format(number),
-        });
-      } catch (e) {
-        res.status(res.statusCode);
-        res.render("shared/error", {
-          authenticated: false,
-          consentUrl: await xero.buildConsentUrl(),
-          error: e
-        });
-      }
-
-    });
-
-    router.get("/invoices", async (req: Request, res: Response) => {
-      try {
-        const tenantId = req.session.activeTenant.tenantId;
-
-        if(!tenantCache.exists(tenantId, 'invoiceTables')) {
-          const invoiceTables = await xeroHelper.loadInvoiceTables(tenantId);
-          tenantCache.update(tenantId, 'invoiceTables', invoiceTables);
-          tenantCache.save();
-        }
-
-        const {customerTable, supplierTable} = tenantCache.get(tenantId, 'invoiceTables');
-
-        res.render("invoices", {
-          consentUrl: await xero.buildConsentUrl(),
-          authenticated: this.authenticationData(req, res),
-          customers: customerTable,
-          suppliers: supplierTable,
-          currencyFormatter: number => new Intl.NumberFormat('en-AU', { maximumSignificantDigits: 2 , minimumSignificantDigits: 2, currencyDisplay: 'narrowSymbol', currency: 'AUD', style: 'currency'}).format(number),
-        });
-      } catch (e) {
-        res.status(res.statusCode);
-        res.render("shared/error", {
-          authenticated: false,
-          consentUrl: await xero.buildConsentUrl(),
-          error: e
-        });
-      }
-
-    });
-
     this.app.use(session({
       secret: "something crazy",
       store: new FileStore(fileStoreOptions),

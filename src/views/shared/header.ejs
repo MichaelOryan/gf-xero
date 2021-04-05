@@ -1,4 +1,3 @@
-<!-- <header> -->
 <div class='page-header'>
   <div class="container">
     <div class='row'>
@@ -18,39 +17,41 @@
 
 
               <% if (loggedIn) { %>
-                <div class='nav-settings'>
-                  <a href="/revoke-token">
-                    <input type="submit" class="select-input" value="Revoke Token">
-                  </a>
-                </div>
-                <div class='nav-settings'>
-                  <% if (authenticated.allTenants.length> 1) { %>
-                    <a href="/disconnect">
-                      <input type="submit" class="select-input" value="Disconnect Tenant">
+                <form method='POST' action="/change_organisation">
+                  <div class='btn-group'>
+                    <a href="/revoke-token">
+                      <input type="button" class="select-input btn btn-primary" value="Revoke Token">
                     </a>
-                    <% } %>
-                </div>
-                <div class='nav-settings'>
-                  <a href="/refresh-token">
-                    <input type="submit" class="select-input" value="Refresh Token">
-                  </a>
-                </div>
-                <div class='nav-settings'>
-                  <form method='POST' action="/change_organisation">
-                    <select name='active_org_id' class="select-box">
-                      <% for(var i=0; i < authenticated.allTenants.length; i++) { %>
-                        <% var selected=authenticated.allTenants[i].tenantId===authenticated.activeTenant.tenantId
-                          ? "selected" : "" %>
-                          <option <%=selected %> value=<%= authenticated.allTenants[i].tenantId %>> <%=
-                                authenticated.allTenants[i].tenantName %>
-                          </option>
-                          <% } %>
-                    </select>
-                    <input type="submit" class="select-input" value="Change Org">
-                  </form>
-                </div>
+                    <% if (authenticated.allTenants.length> 1) { %>
+                      <a href="/disconnect">
+                        <input type="button" class="select-input btn btn-primary" value="Disconnect Tenant">
+                      </a>
+                      <% } %>
+                        <a href="/refresh-token">
+                          <input type="button" class="select-input btn btn-primary" value="Refresh Token">
+                        </a>
+
+
+                        <!-- <div class='row'> -->
+                        <div class='form-group'>
+                          <select name='active_org_id' class="select-box form-control">
+                            <% for(var i=0; i < authenticated.allTenants.length; i++) { %>
+                              <% var selected=authenticated.allTenants[i].tenantId===authenticated.activeTenant.tenantId
+                                ? "selected" : "" %>
+                                <option <%=selected %> value=<%= authenticated.allTenants[i].tenantId %>> <%=
+                                      authenticated.allTenants[i].tenantName %>
+                                </option>
+                                <% } %>
+                          </select>
+                        </div>
+                        <a href="#">
+                          <input type="submit" class="select-input btn btn-primary" value="Change Org">
+                        </a>
+                        <!-- </div> -->
+                  </div>
+                </form>
+
                 <% } %>
     </div>
   </div>
 </div>
-<!-- </header> -->
