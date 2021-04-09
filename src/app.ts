@@ -114,7 +114,7 @@ class App {
       try {
         const authData = this.authenticationData(req, res);
         
-        const tenantId = req.session.activeTenant.tenantId;
+        const tenantId = req.session.activeTenant?.tenantId;
 
         res.render("home", {
           consentUrl: await xero.buildConsentUrl(),
@@ -125,7 +125,8 @@ class App {
         res.status(res.statusCode);
         res.render("shared/error", {
           consentUrl: await xero.buildConsentUrl(),
-          error: e
+          error: e,
+          authenticated: false,
         });
       }
     });
